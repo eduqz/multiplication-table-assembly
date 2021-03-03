@@ -3,35 +3,35 @@ jmp 0x0000:start
 
 ;Dados do projeto
 data:
-    titulo db 'JOGO DA TABUADA',0
-    tutorial db 'Digite o resultado da operacao e pressione [enter] para confirmar',0
+    titulo db '*** JOGO DA TABUADA ***',0
+    descricao db 'Teste seus conhecimentos em matematica com esse quiz',0
     instrucao1 db 'Pressione [enter] para iniciar',0
     instrucao2 db 'Pressione [enter] para responder',0
     instrucao3 db 'Pressione [enter] para continuar',0
+    instrucao4 db 'Pressione [enter] para reiniciar',0
+    vencedor db 'Parabens! Voce eh um genio da matematica!',0
     resposta times 20 db 0
     acertoMsg db 'ACERTOU MISERA',0
     erroMsg db 'ERROU MISERA',0
-    pontuacao db 'Pontuacao: ',0
-    perg1 db '5 x 7 = ',0
+    pontuacao db 'SCORE: ',0
+    perg1 db 'Qual o resulado de 5 x 7?',0
     resp1 db '35',0
-    perg2 db '7 x 9 = ',0
+    perg2 db 'Qual o resulado de 7 x 9?',0
     resp2 db '63',0
-    perg3 db '7 x 7 = ',0
+    perg3 db 'Qual o resulado de 7 x 7?',0
     resp3 db '49',0
-    perg4 db '9 x 9 = ',0
+    perg4 db 'Qual o resulado de 9 x 9?',0
     resp4 db '81',0
-    perg5 db '6 x 7 = ',0
+    perg5 db 'Qual o resulado de 6 x 7?',0
     resp5 db '42',0
-    perg6 db '11 x 7 = ',0
+    perg6 db 'Qual o resulado de 11 x 7?',0
     resp6 db '77',0
-    perg7 db '49 x 21 = ',0
+    perg7 db 'Qual o resulado de 49 x 21?',0
     resp7 db '1029',0
-    perg8 db '65 x 56 = ',0
+    perg8 db 'Qual o resulado de 65 x 56?',0
     resp8 db '3640',0
-    perg9 db '14 x 19 = ',0
+    perg9 db 'Qual o resulado de 14 x 19?',0
     resp9 db '266',0
-    perg10 db '123 x 321  = ',0
-    resp10 db '39483',0
 
 
 ;Macros
@@ -161,15 +161,18 @@ waitEnter:
 	ret
 
 acertou:
-    inc dl
+    xor d
+    mov dl,50
+
     call limpaTela
     call greenBackground
 
-    escreveTexto acertoMsg,25,14
-    escreveTexto instrucao3,25,18
-    escreveTexto pontuacao,25,20
+    escreveTexto acertoMsg,33,14
+    escreveTexto instrucao3,25,25
+    escreveTexto pontuacao,35,3
 
-    mov al,dl
+    mov al, 0x08
+    mov al, dl
     call putchar
 
     call waitEnter
@@ -179,15 +182,16 @@ errou:
     call limpaTela
     call redBackground
 
-    escreveTexto erroMsg,25,14
-    escreveTexto instrucao3,25,18
-    escreveTexto pontuacao,25,20
+    escreveTexto erroMsg,34,14
+    escreveTexto instrucao4,25,25
+    escreveTexto pontuacao,35,3
 
-    mov al,dl
+    mov al, 0x08
+    mov al, dl
     call putchar
 
     call waitEnter
-    ret
+    call start
 
 strcmp:             ; mov si, string1, mov di, string2
 	.loop1:
@@ -208,8 +212,8 @@ strcmp:             ; mov si, string1, mov di, string2
 
 %macro pergunta 2
 	call limpaTela
-    escreveTexto %1,20,10
-    escreveTexto instrucao2,25,14
+    escreveTexto %1,28,12
+    escreveTexto instrucao2,25,25
 
     call waitEnter
 
@@ -222,14 +226,12 @@ strcmp:             ; mov si, string1, mov di, string2
     mov di, resposta    
     mov si, %2
     call strcmp
-    
+
     jnc errou
     call acertou
 %endmacro
 
-quiz:
-    ;xor dx,dx
-    mov dl, '0'
+quiz:   
     pergunta perg1,resp1
     pergunta perg2,resp2
     pergunta perg3,resp3
@@ -239,21 +241,25 @@ quiz:
     pergunta perg7,resp7
     pergunta perg8,resp8
     pergunta perg9,resp9
-    pergunta perg10,resp10
     
+    call limpaTela
+    call blueBackground
+    escreveTexto vencedor,25,10
+    call fim
 
 start:
     mov ax, 0
  	mov ds, ax
  	mov es, ax
 	mov bh, 0
+    mov dl, 48
 
 	call limpaTela
 
     ;Imprimir texto na tela
-    escreveTexto titulo,32,10
-    escreveTexto tutorial,8,12
-    escreveTexto instrucao1,25,14
+    escreveTexto titulo,26,10
+    escreveTexto descricao,12,12
+    escreveTexto instrucao1,25,25
 
     call waitEnter
     je quiz
