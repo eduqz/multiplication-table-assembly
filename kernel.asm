@@ -10,6 +10,7 @@ data:
     instrucao3 db 'Pressione [enter] para continuar',0
     instrucao4 db 'Pressione [enter] para reiniciar',0
     vencedor db 'Parabens! Voce eh um genio da matematica!',0
+    cont db '0', 0
     resposta times 20 db 0
     acertoMsg db 'ACERTOU MISERA',0
     erroMsg db 'ERROU MISERA',0
@@ -42,12 +43,33 @@ data:
     mov  dh, %3
 	int  10h
     mov si, %1
-    call printString
+    call escreveString
+%endmacro
+
+%macro pergunta 2
+	call limpaTela
+    escreveTexto %1,28,12
+    escreveTexto instrucao2,25,25
+
+    call esperaEnter
+
+    ;Lê resposta
+    mov bl, 15
+	call limpaTela
+	call leTeclado
+
+    ;Compara resposta
+    mov di, resposta    
+    mov si, %2
+    call comparaString
+
+    jnc errou
+    call acertou
 %endmacro
 
 
 ;Funções
-redBackground:
+fundoVermelho:
 	mov ah, 0xb
 	mov bh, 0
 	mov bl, 4
@@ -55,7 +77,7 @@ redBackground:
 
 	ret
 
-blueBackground:
+fundoAzul:
 	mov ah, 0xb
 	mov bh, 0
 	mov bl, 1
@@ -63,76 +85,66 @@ blueBackground:
 
 	ret
 
-greenBackground:
+fundoVerde:
 	mov ah, 0xb
 	mov bh, 0
 	mov bl, 2
 	int 10h
 
-putchar:    ;Printa um caractere na tela, pega o valor salvo em al
+escreveChar:
     mov ah, 0x0e
     int 10h
     ret
 
-prints:             ; mov si, string
-    .loop:
-        lodsb           ; bota character apontado por si em al 
-        cmp al, 0       ; 0 é o valor atribuido ao final de uma string
-        je .endloop     ; Se for o final da string, acaba o loop
-        call putchar    ; printa o caractere
-        jmp .loop       ; volta para o inicio do loop
-    .endloop:
-    ret
-
-getchar:    ;Pega o caractere lido no teclado e salva em al
+leChar:
     mov ah, 0x00
     int 16h
     ret
 
-delchar:    ;Deleta um caractere lido no teclado
-    mov al, 0x08          ; backspace
-    call putchar
+removeChar:
+    mov al, 0x08
+    call escreveChar
     mov al, ' '
-    call putchar
-    mov al, 0x08          ; backspace
-    call putchar
+    call escreveChar
+    mov al, 0x08
+    call escreveChar
     ret
 
-gets:                 ; mov di, string, salva na string apontada por di, cada caractere lido na linha
-    xor cx, cx          ; zerar contador
-    .loop1:
-        call getchar
-        cmp al, 0x08      ; backspace
-        je .backspace
-    cmp al, 0x0d      ; carriage return
-    je .done
-    cmp cl, 10        ; string limit checker
-    je .loop1
+leTeclado:
+    xor cx, cx
+    .loop:
+        call leChar
+        cmp al, 0x08
+        je .teclaEspaco
+    cmp al, 0x0d
+    je .fim
+    cmp cl, 10
+    je .loop
     
     stosb
     inc cl
-    call putchar
+    call escreveChar
     
-    jmp .loop1
-    .backspace:
-        cmp cl, 0       ; is empty?
-        je .loop1
+    jmp .loop
+    .teclaEspaco:
+        cmp cl, 0
+        je .loop
         dec di
         dec cl
         mov byte[di], 0
-        call delchar
-    jmp .loop1
-    .done:
+        call removeChar
+    jmp .loop
+    .fim:
     mov al, 0
     stosb
-    call endl
+    call fimLeitura
     ret
 
-endl:       ;Pula uma linha, printando na tela o caractere que representa o /n
-    mov al, 0x0a          ; line feed
-    call putchar
-    mov al, 0x0d          ; carriage return
-    call putchar
+fimLeitura:
+    mov al, 0x0a
+    call escreveChar
+    mov al, 0x0d
+    call escreveChar
     ret
 
 limpaTela:
@@ -141,7 +153,7 @@ limpaTela:
 	int 10h
 	ret
 
-printString:
+escreveString:
 	lodsb
     mov ah, 0xe
     mov bh, 0
@@ -149,87 +161,63 @@ printString:
     int 10h
 
     cmp al, 0
-    jne printString
+    jne escreveString
     ret
 
-waitEnter:
+esperaEnter:
 	mov di, resposta
-	call getchar
+	call leChar
 	cmp al, 13
-	jne waitEnter
+	jne esperaEnter
 
 	ret
 
 acertou:
-    xor d
-    mov dl,50
+    mov dl, [cont]
+    inc dl
+    mov [cont], dl
 
     call limpaTela
-    call greenBackground
+    call fundoVerde
 
     escreveTexto acertoMsg,33,14
     escreveTexto instrucao3,25,25
+    
     escreveTexto pontuacao,35,3
+    escreveTexto cont,42,3
 
-    mov al, 0x08
-    mov al, dl
-    call putchar
-
-    call waitEnter
+    call esperaEnter
     ret
 
 errou:
     call limpaTela
-    call redBackground
+    call fundoVermelho
 
     escreveTexto erroMsg,34,14
     escreveTexto instrucao4,25,25
+
     escreveTexto pontuacao,35,3
+    escreveTexto cont,42,3
 
-    mov al, 0x08
-    mov al, dl
-    call putchar
 
-    call waitEnter
+    call esperaEnter
     call start
 
-strcmp:             ; mov si, string1, mov di, string2
+comparaString:
 	.loop1:
 		lodsb
 		cmp al, byte[di]
-		jne .notequal
+		jne .diferente
 		cmp al, 0
-		je .equal
+		je .igual
 		inc di
 		jmp .loop1
-	.notequal:
+	.diferente:
 		clc
 		ret
-	.equal:
+	.igual:
 		stc
 		ret
-
-
-%macro pergunta 2
-	call limpaTela
-    escreveTexto %1,28,12
-    escreveTexto instrucao2,25,25
-
-    call waitEnter
-
-    ;Lê resposta
-    mov bl, 15
-	call limpaTela
-	call gets
-
-    ;Compara resposta
-    mov di, resposta    
-    mov si, %2
-    call strcmp
-
-    jnc errou
-    call acertou
-%endmacro
 
 quiz:   
     pergunta perg1,resp1
@@ -243,16 +231,27 @@ quiz:
     pergunta perg9,resp9
     
     call limpaTela
-    call blueBackground
+    call fundoAzul
     escreveTexto vencedor,25,10
     call fim
 
+fim:
+    jmp $
+    jmp 0x7e00
+
+
+;Função principal
 start:
     mov ax, 0
  	mov ds, ax
  	mov es, ax
 	mov bh, 0
     mov dl, 48
+
+    ;Zera contador
+    mov dl, [cont]
+    mov dl, '0'
+    mov [cont], dl
 
 	call limpaTela
 
@@ -261,9 +260,5 @@ start:
     escreveTexto descricao,12,12
     escreveTexto instrucao1,25,25
 
-    call waitEnter
+    call esperaEnter
     je quiz
-   
-fim:
-    jmp $
-    jmp 0x7e00
