@@ -36,7 +36,8 @@ data:
 
 
 ;Macros
-%macro escreveTexto 3
+;Esse macro recebe como parâmetros o texto e as posições x e y do cursor
+%macro escreveTexto 3 
 	mov  ah, 02h
 	mov  bh, 0
     mov  dl, %2
@@ -46,6 +47,7 @@ data:
     call escreveString
 %endmacro
 
+;Esse macro recebe como parâmetros a pergunta e a resposta correta, para definir se o usuário acertou ou não
 %macro pergunta 2
 	call limpaTela
     escreveTexto %1,28,12
@@ -219,6 +221,10 @@ comparaString:
 		stc
 		ret
 
+fim:
+    jmp $
+    jmp 0x7e00
+
 quiz:   
     pergunta perg1,resp1
     pergunta perg2,resp2
@@ -234,10 +240,6 @@ quiz:
     call fundoAzul
     escreveTexto vencedor,25,10
     call fim
-
-fim:
-    jmp $
-    jmp 0x7e00
 
 
 ;Função principal
